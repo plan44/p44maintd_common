@@ -28,7 +28,7 @@
 
 #include "application.hpp"
 
-#include "jsonwebclient.hpp"
+#include "jsonobject.hpp"
 #include "macaddress.hpp"
 #include "digitalio.hpp"
 #include "utils.hpp"
