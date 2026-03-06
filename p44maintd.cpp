@@ -642,8 +642,12 @@ public:
       serial = serial | (2<<24); // 2 = plan44 serial encoding of Raspberry Pi Foundation
     }
     else if ((mac>>24)==0x40A36B) {
-      // Onion Corporation (C00000-CFFFFF)
-      serial = serial | (3<<24); // 3 = plan44 serial encoding of Onion Corporation
+      // Onion Corporation (MA-M: C00000-CFFFFF)
+      serial = serial | (3<<24); // 3 = plan44 serial encoding of Onion Corporation first MAC block
+    }
+    else if ((mac>>24)==0x881e59) {
+      // Onion Corporation (MA-L: 000000-FFFFFF)
+      serial = serial | (4<<24); // 4 = plan44 serial encoding of Onion Corporation second MAC block
     }
     else {
       // unknown OUI, UA must do
