@@ -563,22 +563,22 @@ class P44maintd : public CmdLineApp
 protected:
 
   // Indicator
-  IndicatorOutputPtr redLED;
-  IndicatorOutputPtr greenLED;
+  IndicatorOutputPtr mRedLED;
+  IndicatorOutputPtr mGreenLED;
 
   // system config
-  string defspath;
+  string mDefspath;
   typedef map<string, string> DefsMap;
-  DefsMap defs;
+  DefsMap mDefs;
 
 public:
 
   P44maintd()
   {
-    defspath = DEFAULT_DEFS_PATH;
+    mDefspath = DEFAULT_DEFS_PATH;
     // set dummy LEDs
-    redLED = IndicatorOutputPtr (new IndicatorOutput("missing", false));
-    greenLED = IndicatorOutputPtr (new IndicatorOutput("missing", false));
+    mRedLED = IndicatorOutputPtr (new IndicatorOutput("missing", false));
+    mGreenLED = IndicatorOutputPtr (new IndicatorOutput("missing", false));
   }
 
 
@@ -596,9 +596,9 @@ public:
       }
       else {
         // different defs dir?
-        getStringOption("defsdir", defspath);
-        if (defspath.size()>0 && defspath[defspath.size()-1]!='/')
-          defspath += '/';
+        getStringOption("defsdir", mDefspath);
+        if (mDefspath.size()>0 && mDefspath[mDefspath.size()-1]!='/')
+          mDefspath += '/';
 
         // log level?
         int loglevel = DEFAULT_LOGLEVEL;
@@ -619,10 +619,10 @@ public:
     // use platform defs to determine which are the LEDs
     string io;
     if (getDef("PLATFORM_RED_LED", io)) {
-      redLED = IndicatorOutputPtr(new IndicatorOutput(io.c_str(), false));
+      mRedLED = IndicatorOutputPtr(new IndicatorOutput(io.c_str(), false));
     }
     if (getDef("PLATFORM_GREEN_LED", io)) {
-      greenLED = IndicatorOutputPtr(new IndicatorOutput(io.c_str(), false));
+      mGreenLED = IndicatorOutputPtr(new IndicatorOutput(io.c_str(), false));
     }
   }
 
@@ -723,7 +723,7 @@ public:
   {
     string value;
     if (string_fgetfirstline(aFileName, value)) {
-      defs[key] = value;
+      mDefs[key] = value;
       return true;
     }
     return false;
@@ -732,7 +732,7 @@ public:
 
   bool getDef(const string aKey, string &aDef, const char *aDefault=NULL, DefsMap *aDefsP = NULL)
   {
-    DefsMap &myDefs = aDefsP ? *aDefsP : defs;
+    DefsMap &myDefs = aDefsP ? *aDefsP : mDefs;
     DefsMap::iterator pos;
     pos = myDefs.find(aKey);
     if (pos!=myDefs.end()) {
@@ -757,8 +757,8 @@ public:
   // set value if not already defined
   bool setDefDefault(const string aKey, const string aValue)
   {
-    if (defs.find(aKey)!=defs.end()) return false;
-    defs[aKey] = aValue;
+    if (mDefs.find(aKey)!=mDefs.end()) return false;
+    mDefs[aKey] = aValue;
     return true;
   }
 
@@ -785,22 +785,22 @@ public:
   virtual bool setDefDefaults()
   {
     // in all cases: current time
-    defs["STATUS_TIME"] = string_ftime("%Y-%m-%d %H:%M:%S");
+    mDefs["STATUS_TIME"] = string_ftime("%Y-%m-%d %H:%M:%S");
     #if BUILDENV_XCODE
     // pseudo-platform has fixed defs, without loading anything
     // - platform
-    defs["PLATFORM_IDENTIFIER"] = "xcode_dummy";
-    defs["PLATFORM_NAME"] = "MacOSX";
+    mDefs["PLATFORM_IDENTIFIER"] = "xcode_dummy";
+    mDefs["PLATFORM_NAME"] = "MacOSX";
     // - product
-    defs["PRODUCT_IDENTIFIER"] = "p44-xx-mac-xcode";
-    defs["PRODUCT_MODEL"] = "P44-XX-MAC";
-    defs["PRODUCT_VARIANT"] = "Apple";
-    defs["PRODUCT_HOSTPREFIX"] = "p44_xx_mac";
+    mDefs["PRODUCT_IDENTIFIER"] = "p44-xx-mac-xcode";
+    mDefs["PRODUCT_MODEL"] = "P44-XX-MAC";
+    mDefs["PRODUCT_VARIANT"] = "Apple";
+    mDefs["PRODUCT_HOSTPREFIX"] = "p44_xx_mac";
     // - firmware
-    defs["FIRMWARE_VERSION"] = "0.0.0.42";
-    defs["FIRMWARE_FEED"] = "opensource";
+    mDefs["FIRMWARE_VERSION"] = "0.0.0.42";
+    mDefs["FIRMWARE_FEED"] = "opensource";
     // - status
-    defs["STATUS_USER_LEVEL"] = "0";
+    mDefs["STATUS_USER_LEVEL"] = "0";
     // skip dynamic platform stuff for XCode builds
     return false;
     #elif BUILDENV_GENERIC
@@ -839,7 +839,7 @@ public:
     string def;
 
     // build defs
-    defs.clear();
+    mDefs.clear();
     // set defaults
     if (!setDefDefaults()) {
       // defaults are already sufficient for platform
@@ -848,7 +848,7 @@ public:
     else {
       // read defs files to dettermine platform
       // - platform, possibly is a softlink
-      readDefsFrom(defspath+"p44platform.defs", defs);
+      readDefsFrom(mDefspath+"p44platform.defs", mDefs);
       // - this might be a generic head definition file in a FW that supports multiple platforms.
       //   Either it contains a PLATFORM_IDENTIFIER, or it might also contain a PLATFORM_IDENTIFIER_GETTER
       //   (which can also override a default PLATFORM_IDENTIFIER already present at this point)
@@ -871,7 +871,7 @@ public:
   {
     string v = trimWhiteSpace(aAnswer);
     if (v.size()>0) {
-      defs["PLATFORM_IDENTIFIER"] = v;
+      mDefs["PLATFORM_IDENTIFIER"] = v;
     }
     processPlatformSpecifics(aCallback);
   }
@@ -883,7 +883,7 @@ public:
 
     // - additional platform definitions that may be included in the common firmware for multiple platforms
     if (getDef("PLATFORM_IDENTIFIER", def)) {
-      readDefsFrom(defspath+"p44platform-" + def + ".defs", defs);
+      readDefsFrom(mDefspath+"p44platform-" + def + ".defs", mDefs);
     }
     // - set/override runtime detected computing module (Note: usually available only after p44 init script has run)
     readDefFromFirstLine(COMPUTING_MODULE_FILE, "PLATFORM_COMPUTINGMODULE");
@@ -907,7 +907,7 @@ public:
   {
     string v = trimWhiteSpace(aAnswer);
     if (v.size()>0) {
-      defs["PRODUCT_IDENTIFIER"] = v;
+      mDefs["PRODUCT_IDENTIFIER"] = v;
     }
     processProductSpecifics(aCallback);
   }
@@ -918,21 +918,21 @@ public:
     string def;
 
     // - product, possibly is a softlink
-    readDefsFrom(defspath+"p44product.defs", defs);
+    readDefsFrom(mDefspath+"p44product.defs", mDefs);
     // - if neither PLATFORM_PRODUCT_IDENTIFIER_GETTER nor p44product.defs did  deliver a product identifier, try to load default
     if (!getDef("PRODUCT_IDENTIFIER", def)) {
       if (getDef("PLATFORM_IDENTIFIER", def)) {
         // platform specific
-        readDefsFrom(defspath+"p44product-default_" + def + ".defs", defs);
+        readDefsFrom(mDefspath+"p44product-default_" + def + ".defs", mDefs);
       }
     }
     if (!getDef("PRODUCT_IDENTIFIER", def)) {
       // still none - try generic defaults
-      readDefsFrom(defspath+"p44product-default.defs", defs);
+      readDefsFrom(mDefspath+"p44product-default.defs", mDefs);
     }
     // - additional product definitions that may included in the common firmware for multiple products
     if (getDef("PRODUCT_IDENTIFIER", def)) {
-      readDefsFrom(defspath+"p44product-" + def + ".defs", defs);
+      readDefsFrom(mDefspath+"p44product-" + def + ".defs", mDefs);
     }
     // check for dynamic producer
     //  such as: "fw_printenv p44producer | sed -r -n -e '/^p44producer=/s/.*=//p'"
@@ -949,7 +949,7 @@ public:
     else {
       // assume static producer
       // - check separate file first
-      readDefFromFirstLine(defspath+"p44producer", "PRODUCER");
+      readDefFromFirstLine(mDefspath+"p44producer", "PRODUCER");
       checkProducer(aCallback);
     }
   }
@@ -959,7 +959,7 @@ public:
   {
     string v = trimWhiteSpace(aAnswer);
     if (v.size()>0) {
-      defs["PRODUCER"] = v;
+      mDefs["PRODUCER"] = v;
     }
     checkProducer(aCallback);
   }
@@ -972,19 +972,19 @@ public:
     // - make sure we have at least a "unknown" producer
     setDefDefault("PRODUCER", "unknown");
     // - feed
-    readDefFromFirstLine(defspath+"p44feed", "FIRMWARE_FEED");
+    readDefFromFirstLine(mDefspath+"p44feed", "FIRMWARE_FEED");
     // - version
-    readDefFromFirstLine(defspath+"p44version", "FIRMWARE_VERSION");
+    readDefFromFirstLine(mDefspath+"p44version", "FIRMWARE_VERSION");
     // - user level
     if (!readDefFromFirstLine("/tmp/p44userlevel", "STATUS_USER_LEVEL")) {
       if (!readDefFromFirstLine(FLASH_PATH "p44userlevel", "STATUS_USER_LEVEL")) {
         if (getDef("PRODUCT_DEFAULT_USER_LEVEL", def)) {
           // use product specific default user level
-          defs["STATUS_USER_LEVEL"] = def;
+          mDefs["STATUS_USER_LEVEL"] = def;
         }
         else {
           // production default is 0, testing/beta/development default is 1
-          defs["STATUS_USER_LEVEL"] = getDef("FIRMWARE_FEED")=="prod" ? "0" : "1";
+          mDefs["STATUS_USER_LEVEL"] = getDef("FIRMWARE_FEED")=="prod" ? "0" : "1";
         }
       }
     }
@@ -1009,11 +1009,11 @@ public:
   {
     string v = trimWhiteSpace(aAnswer);
     if (v.size()>0) {
-      defs["PRODUCT_VARIANT"] = v;
+      mDefs["PRODUCT_VARIANT"] = v;
     }
     else {
       // assume variant 0 if not set
-      defs["PRODUCT_VARIANT"] = "0"; // e.g. DEH v3
+      mDefs["PRODUCT_VARIANT"] = "0"; // e.g. DEH v3
     }
     processVariantSpecifics(aCallback);
   }
@@ -1037,28 +1037,28 @@ public:
 
     // try to load product variant specific settings
     if (getDef("PRODUCT_VARIANT", def)) {
-      readDefsFrom(defspath+"p44variant-" + getDef("PRODUCT_IDENTIFIER") + "-" + def + ".defs", defs);
+      readDefsFrom(mDefspath+"p44variant-" + getDef("PRODUCT_IDENTIFIER") + "-" + def + ".defs", mDefs);
     }
     // overrides from individual configuration
-    readDefsFrom(FLASH_PATH "/p44custom.defs", defs);
+    readDefsFrom(FLASH_PATH "/p44custom.defs", mDefs);
     // get unit variables
     // - serial
-    defs["UNIT_SERIALNO"] = string_format("%lld", serial());
+    mDefs["UNIT_SERIALNO"] = string_format("%lld", serial());
     // - MAC address
     uint64_t mac = macAddress();
     string macStr;
-    defs["UNIT_MAC_DECIMAL"] = string_format("%lld", mac);
+    mDefs["UNIT_MAC_DECIMAL"] = string_format("%lld", mac);
     for (int i=0; i<6; ++i) {
       if (i>0) macStr += ":";
       string_format_append(macStr, "%02X",(unsigned int)((mac>>((5-i)*8)) & 0xFF));
     }
-    defs["UNIT_MACADDRESS"] = macStr;
+    mDefs["UNIT_MACADDRESS"] = macStr;
     // - IPv4
     uint32_t ipv4 = ipv4Address();
-    defs["STATUS_IPV4"] = string_format("%d.%d.%d.%d", (ipv4>>24) & 0xFF, (ipv4>>16) & 0xFF, (ipv4>>8) & 0xFF, ipv4 & 0xFF);
+    mDefs["STATUS_IPV4"] = string_format("%d.%d.%d.%d", (ipv4>>24) & 0xFF, (ipv4>>16) & 0xFF, (ipv4>>8) & 0xFF, ipv4 & 0xFF);
     // - host name
     getDef("PRODUCT_HOSTPREFIX", def, "unknown");
-    defs["UNIT_HOSTNAME"] = string_format("%s_%lld",def.c_str(), serial());
+    mDefs["UNIT_HOSTNAME"] = string_format("%s_%lld",def.c_str(), serial());
     // Derived default values
     setDerivedDefs();
     // done
@@ -1128,8 +1128,8 @@ public:
   {
     // signal "busy"
     enableLEDs();
-    redLED->steadyOn();
-    greenLED->steadyOn();
+    mRedLED->steadyOn();
+    mGreenLED->steadyOn();
     // Now reboot
     if (aHardReset) {
       #if !BUILDENV_XCODE && !BUILDENV_GENERIC
@@ -1678,7 +1678,7 @@ public:
 
   void showDefs()
   {
-    for (DefsMap::iterator pos = defs.begin(); pos!=defs.end(); pos++) {
+    for (DefsMap::iterator pos = mDefs.begin(); pos!=mDefs.end(); pos++) {
       printf("%s=%s\n", pos->first.c_str(), shellQuote(pos->second).c_str());
     }
     terminateApp(EXIT_SUCCESS);
@@ -1690,7 +1690,7 @@ public:
   JsonObjectPtr devinfo(ErrorPtr &err)
   {
     JsonObjectPtr result = JsonObject::newObj();
-    for (DefsMap::iterator pos = defs.begin(); pos!=defs.end(); pos++) {
+    for (DefsMap::iterator pos = mDefs.begin(); pos!=mDefs.end(); pos++) {
       result->add(pos->first.c_str(), JsonObject::newString(pos->second));
     }
     // add time
@@ -2066,8 +2066,8 @@ public:
   {
     // signal "busy"
     enableLEDs();
-    redLED->steadyOn();
-    greenLED->steadyOn();
+    mRedLED->steadyOn();
+    mGreenLED->steadyOn();
     // do factory reset
     LOG(LOG_NOTICE, "calling factory reset script");
     string res;
@@ -2086,10 +2086,10 @@ public:
 
   void endApp(bool aSuccess)
   {
-    redLED->steadyOff();
-    greenLED->steadyOff();
+    mRedLED->steadyOff();
+    mGreenLED->steadyOff();
     // end with steady LED color according to exit status
-    if (aSuccess) greenLED->steadyOn(); else redLED->steadyOn();
+    if (aSuccess) mGreenLED->steadyOn(); else mRedLED->steadyOn();
     // exit
     terminateApp(aSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
   }
