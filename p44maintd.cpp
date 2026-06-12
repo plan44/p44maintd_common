@@ -834,7 +834,7 @@ public:
 
 
   // add dynamically obtainable platform identification info
-  void identifyDynamically(SimpleCB aCallback)
+  virtual void identifyDynamically(SimpleCB aCallback)
   {
     string def;
 
