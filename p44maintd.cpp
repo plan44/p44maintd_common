@@ -1250,6 +1250,9 @@ public:
     else if (aCmd=="setpassword") {
       aAnswer = setpassword(aParams, err);
     }
+    else if (aCmd=="validatelogin") {
+      aAnswer = validatelogin(aParams, err);
+    }
     else if (aCmd=="factoryreset") {
       aAnswer = factory_reset_from_ui(aParams, err);
     }
@@ -1779,6 +1782,65 @@ public:
   {
     if (Error::isOK(aError)) {
       answerAndTerminate(emptyAnswer());
+    }
+    else {
+      answerAndTerminate(makeErrorAnswer(aError));
+    }
+  }
+
+
+  JsonObjectPtr validatelogin(JsonObjectPtr aUriParams, ErrorPtr &err)
+  {
+    // check for parameters to set
+    JsonObjectPtr o;
+    string username;
+    // optionally use different user name
+    if (aUriParams->get("username", o)) {
+      username = o->stringValue();
+      if (aUriParams->get("password", o)) {
+        string password = o->stringValue();
+        #if BUILDENV_XCODE || BUILDENV_GENERIC
+        // dummy
+        const char *path = "/bin/echo";
+        const char *cmd[] = {
+          "echo",
+          "validate login:",
+          username.c_str(),
+          "/",
+          password.c_str(),
+          NULL
+        };
+        #else
+        const char *path = "/sbin/p44pwval";
+        const char *cmd[] = {
+          "p44pwval",
+          username.c_str(), // username
+          password.c_str(), // password
+          NULL
+        };
+        #endif
+        MainLoop::currentMainLoop().fork_and_execve(
+          boost::bind(&P44maintd::loginValidated, this, _1),
+          path, (char **)cmd, NULL,
+          true, NULL, // capture output to prevent output going to mg44
+          0 // mute stderr
+        );
+        return JsonObjectPtr(); // no answer now, but later when we get data
+      }
+    }
+    err = ErrorPtr(new Error(1, "missing user or password"));
+    return JsonObjectPtr();
+  }
+
+
+  void loginValidated(ErrorPtr aError)
+  {
+    if (Error::isOK(aError)) {
+      answerAndTerminate(makeAnswer(JsonObject::newBool(true)));
+    }
+    else if (Error::isError(aError, ExecError::domain(), 1)) {
+      // normal 1 exit just means not validated
+      answerAndTerminate(makeAnswer(JsonObject::newBool(false)));
     }
     else {
       answerAndTerminate(makeErrorAnswer(aError));
