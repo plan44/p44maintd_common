@@ -1727,8 +1727,8 @@ public:
     }
     if (aUriParams->get("password", o)) {
       string password = o->stringValue();
-      // use mg44 to modify global password file
       #if BUILDENV_XCODE || BUILDENV_GENERIC
+      // dummy
       const char *path = "/bin/echo";
       const char *cmd[] = {
         "echo",
@@ -1738,7 +1738,17 @@ public:
         password.c_str(),
         NULL
       };
+      #elif BUILDENV_OPENWRT
+      // on 2.8.4.6 and newer, we have p44setlogin which manages both mg44 and uhttpd
+      const char *path = "/sbin/p44setlogin";
+      const char *cmd[] = {
+        "p44setlogin",
+        username.c_str(), // username
+        password.c_str(), // password
+        NULL
+      };
       #else
+      // Legacy: use mg44 to modify global password file
       // mg44 -A /flash/webui_authfile P44-xx-xx ${user} ${pw}
       string model = getDef("PRODUCT_MODEL");
       const char *path = "/usr/bin/mg44";
