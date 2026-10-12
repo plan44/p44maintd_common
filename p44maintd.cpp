@@ -1228,7 +1228,7 @@ public:
       aAnswer = restart_from_ui(err, true);
     }
     else if (aCmd=="configbackup") {
-      config_backup(err);
+      config_backup(aCmdObj, err);
     }
     else if (aCmd=="configrestoreprep") {
       aAnswer = config_restore_prep(aCmdObj, err); // uploadedfile is not a uri_param nor post data, but one level up
@@ -1977,10 +1977,24 @@ public:
 
   // MARK: ===== config backup & restore
 
-  void config_backup(ErrorPtr &err)
+  void config_backup(JsonObjectPtr aUriParams, ErrorPtr &err)
   {
     // create filename
-    string fn = getDef("UNIT_HOSTNAME") + "_" + string_ftime("%Y-%m-%d_%H.%M") + ".p44cfg";
+    string fn;
+    JsonObjectPtr o;
+    if (aUriParams->get("backupfilename",o)) {
+      fn = o->stringValue(); // entire filename, including extension
+    }
+    else {
+      string devname;
+      if (aUriParams->get("deviceidentifier", o)) {
+        devname = o->stringValue();
+      }
+      else {
+        devname = getDef("UNIT_HOSTNAME");
+      }
+      fn = devname + "_" + string_ftime("%Y-%m-%d_%H.%M") + ".p44cfg";
+    }
     // create headers
     printf(
       "\x03" "application/octet-stream\r\n"
